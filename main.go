@@ -53,18 +53,19 @@ func main() {
 		log.Fatalf("failed to create client: %v", err)
 	}
 
-	cursor := time.Now().Add(5 * -time.Minute).UnixMicro()
+	cursor := time.Now().Add(1 * -time.Minute).UnixMicro()
 
 	// Every 5 seconds print the events read and bytes read and average event size
 	go func() {
-		ticker := time.NewTicker(5 * time.Second)
+		ticker := time.NewTicker(2 * time.Second)
 		for {
 			select {
 			case <-ticker.C:
+				cursor = time.Now().Add(100 * -time.Millisecond).UnixMicro()
 				eventsRead := c.EventsRead.Load()
 				bytesRead := c.BytesRead.Load()
 				avgEventSize := bytesRead / eventsRead
-				logger.Info("stats", "events_read", eventsRead, "bytes_read", bytesRead, "avg_event_size", avgEventSize)
+				logger.Info("stats", "events_read", eventsRead, "bytes_read", bytesRead, "avg_event_size", avgEventSize, "cursor", cursor)
 			}
 		}
 	}()
@@ -76,6 +77,7 @@ func main() {
 	retry:
 
 	if err := c.ConnectAndRead(ctx, &cursor); err != nil {
+		cursor = time.Now().Add(100 * -time.Millisecond).UnixMicro()
 		goto retry
 	}
 
