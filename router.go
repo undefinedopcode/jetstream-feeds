@@ -47,12 +47,12 @@ func startFeedService(cfg *FeedConfig) {
 				ts = parts[0]
 				cid = parts[1]
 				if ts == "" || cid == "" {
-					c.AbortWithError(400, fmt.Errorf("Bad request: malformed cursor"))
+					c.AbortWithError(401, fmt.Errorf("Bad request: malformed cursor"))
 					return
 				}
-				_, err = strconv.ParseInt(ts, 10, 32)
+				_, err = strconv.ParseInt(ts, 10, 64)
 				if err != nil {
-					c.AbortWithError(400, fmt.Errorf("Bad request: malformed cursor"))
+					c.AbortWithError(402, fmt.Errorf("Bad request: malformed cursor"))
 					return
 				}
 			}
@@ -64,7 +64,7 @@ func startFeedService(cfg *FeedConfig) {
 			}
 			// log.Printf("Got posts = %+v", posts)
 			if len(posts) > 0 {
-				last := posts[0]
+				last := posts[len(posts)-1]
 				list := &PostList{
 					Cursor: last.IndexedAt+"::"+last.CID,
 					Feed: []PostRec{
