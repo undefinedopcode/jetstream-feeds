@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	serverAddr = "wss://jetstream.atproto.tools/subscribe"
+	serverAddr = "wss://jetstream2.us-east.bsky.network/subscribe"
 )
 
 var cfg *Config
@@ -53,7 +53,7 @@ func main() {
 		log.Fatalf("failed to create client: %v", err)
 	}
 
-	cursor := time.Now().Add(5 * -time.Minute).UnixMicro()
+	cursor := time.Now().Add(10 * -time.Minute).UnixMicro()
 
 	// Every 5 seconds print the events read and bytes read and average event size
 	go func() {
@@ -61,7 +61,7 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				cursor = time.Now().Add(1000 * -time.Millisecond).UnixMicro()
+				cursor = time.Now().Add(100 * -time.Millisecond).UnixMicro()
 				eventsRead := c.EventsRead.Load()
 				bytesRead := c.BytesRead.Load()
 				avgEventSize := bytesRead / eventsRead
@@ -71,7 +71,8 @@ func main() {
 	}()
 
 	for _, feed := range cfg.Feeds {
-		startFeedService(&feed)
+		startFeedService(feed)
+		postWriter(ctx, feed)
 	}
 
 	retry:
@@ -104,6 +105,7 @@ func (h *handler) HandleEvent(ctx context.Context, event *models.Event) error {
 					uri := fmt.Sprintf("at://%s/%s/%s", event.Did, event.Commit.Collection, event.Commit.RKey)
 					var reply_parent = ""
 					var reply_root = ""
+					log.Printf("post time = %d", event.TimeUS / 1000)
 					p := &Post{
 						URI: uri,
 						CID: event.Commit.CID,
@@ -115,20 +117,13 @@ func (h *handler) HandleEvent(ctx context.Context, event *models.Event) error {
 						p.ReplyParent = &reply_parent
 						p.ReplyRoot = &reply_root
 					}
-					if feed.db == nil {
-						if db, err := openDatabase(feed.DB); err == nil {
-							feed.db = db
-						}
-					}
-					if feed.db != nil {
-						feed.db.Delete(&Post{URI: p.URI})
-						feed.db.Create(p)
-					}
+					log.Printf("Writing post")
+					feed.ch <- p
 					if cfg.Debug {
 						fmt.Printf(
 							"[%s] %v |(%s)| %s\n",
 							feed.ID,
-							time.UnixMicro(event.TimeUS).Local().Format("15:04:05"),
+							time.UnixMicro(event.TimeUS).Format("15:04:05"),
 							event.Did,
 							post.Text,
 						)

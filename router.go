@@ -70,6 +70,9 @@ func startFeedService(cfg *FeedConfig) {
 					Feed: []PostRec{
 					},
 				}
+				if cid == "" && cfg.PinnedURI != "" {
+					list.Feed = append(list.Feed, PostRec{cfg.PinnedURI})
+				}
 				for _, p := range posts {
 					list.Feed = append(list.Feed, PostRec{p.URI})
 				}
