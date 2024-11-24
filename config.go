@@ -50,6 +50,7 @@ type AnalyzerConfig struct {
 	Triggers  []string           `hcl:"triggers,optional"`
 	Threshold float64            `hcl:"threshold,optional"`
 	Patterns  map[string]float64 `hcl:"patterns"`
+	AnyTrigger bool `hcl:"any_trigger,optional"`
 }
 
 type Pattern struct {
@@ -110,7 +111,7 @@ func readConfig(filename string) (*Config, error) {
 	for _, fc := range config.Feeds {
 		fc.filters = map[string]*TextAnalyzer{}
 		for _, ac := range config.Analyzers {
-			fc.filters[ac.ID] = NewTextAnalyzer(ac.Triggers, ac.Patterns, ac.Threshold)
+			fc.filters[ac.ID] = NewTextAnalyzer(ac.Triggers, ac.Patterns, ac.Threshold, ac.AnyTrigger)
 		}
 	}
 	return config, nil

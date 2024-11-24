@@ -21,16 +21,18 @@ type TextAnalyzer struct {
 	Patterns         map[string]float64
 	Threshold        float64
 	Triggers         []string
+	AnyTriggers      bool
 }
 
 // NewTextAnalyzer creates a new analyzer with default settings
-func NewTextAnalyzer(triggers []string, patterns map[string]float64, threshold float64) *TextAnalyzer {
+func NewTextAnalyzer(triggers []string, patterns map[string]float64, threshold float64, anyTrigger bool) *TextAnalyzer {
 	return &TextAnalyzer{
 		MinContextLength: 60,
 		MaxContextLength: 300,
 		Patterns:         patterns,
 		Threshold:        threshold,
 		Triggers:         triggers,
+		AnyTriggers: anyTrigger,
 	}
 }
 
@@ -97,7 +99,7 @@ func (a *TextAnalyzer) AnalyzeText(text string) []SentimentMatch {
 			}
 
 			matches = append(matches, match)
-			index += len(pattern)
+			index ++
 		}
 	}
 
@@ -110,7 +112,7 @@ func (a *TextAnalyzer) HasTriggers(text string) bool {
 		return true
 	}
 	for _, word := range a.Triggers {
-		if !strings.Contains(text, word) {
+		if !strings.Contains(text, word) && !a.AnyTriggers {
 			return false
 		}
 	}

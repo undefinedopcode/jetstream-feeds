@@ -24,6 +24,7 @@ feed "neurodiversity" {
 
 	exclusion_filters = [
 	    "antivax",
+	    "negative-terms",
 	]
 }
 
@@ -50,6 +51,7 @@ feed "disability" {
 
 	exclusion_filters = [
 	    "antivax",
+	    "negative-terms",
 	]
 }
 
@@ -88,4 +90,22 @@ analyzer "antivax" {
         "cdc has been lying" =                 0.3,
         "medical community claims" =           0.2,
     }
+}
+
+analyzer "negative-terms" {
+	triggers = [
+		"retard",
+		"nigger",
+		"faggot",	
+	]
+
+  any_trigger = true
+
+	threshold = 0.01
+
+	patterns = {
+		"retard" = 10,
+		"nigger" = 10,
+		"faggot" = 10,			
+	}	
 }
