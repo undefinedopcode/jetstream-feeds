@@ -1,57 +1,30 @@
-feed_owner = "undefinedopco.de"
-feed_base  = "did:plc:lbniuhsfce4bq2kqomky52px"
+feed_owner = "foobarbaz@bsky.social"
+feed_base  = "did:plc:fj234r9gj345jm340fgm"
 
-feed "neurodiversity" {
-    name = "Bluesky Neurodiversity"
+feed "ducks" {
+    name = "Bluesky Duck fanciers"
     host = "localhost"
     port = 6502
     pinned_uri = "at://did:plc:lbniuhsfce4bq2kqomky52px/app.bsky.feed.post/3lax3rm3qj22n"
-    match_expr = "\\b(plural system|bipolar|bpd|schizophrenia|adhd|autism|autistic|audhd|attention deficit hyperactivity|asd|neurodiverse|neurodiversity|neurdivergent|neurospicy|neurocolorful|dyslexia|dyslexic|dyspraxic|dyspraxia|dysgraphia|dyscalculia|ocd|tourettes)\\b"
 
-    force_expr = "\\b(#neurodiversity|#actuallyautistic|#neurodivergent)\\b"
+    match_expr = "\\b(ducks|quack|canard)\\b"
+
+    force_expr = "\\b(#ducks)\\b"
 
     include_replies = true
 
-	database = "neuro.db"
+	database = "ducks.db"
 
-	publish "feeds.neurodifferent.me" {
-        service_did = "did:web:feeds.neurodifferent.me"
-        service_icon = "neurodiversity.png"
-        service_short_name = "neurodiversity"
-        service_human_name = "Bluesky Neurodiversity"
-        service_description = "A feed showing posts with neurodiversity related terms."
+	publish "ducks.example.com" {
+        service_did = "did:web:ducks.example.com"
+        service_icon = "ducks.png"
+        service_short_name = "ducks"
+        service_human_name = "Bluesky Duck fanciers"
+        service_description = "A feed showing posts with duck related terms."
 	}
 
 	exclusion_filters = [
 	    "antivax",
-	    "negative-terms",
-	]
-}
-
-feed "disability" {
-    name = "Bluesky Disability"
-    host = "localhost"
-    port = 6503
-
-    match_expr = "\\b(disability|disabled|accessible|accessibility|accessible spaces|mobility aid|hearing aid|screen reader|assistive tech|visual aid|aac|tts|text to speech|assistive augmented communication|wheelchair|disabilities|ableism|ableist|impairment|disorder|access barriers|accessible design|accessible web design|accomodation|adaptive tech|braille|compensatory tool|asl|sign language|deaf|tty|teletypewriter|tbi|brain injury|universal design|sensory issues|auditory processing|apd|rsi|repetitive (stress|strain)|inclusive design|autism|autistic|adhd|eds|mcas|pots|mast cell|long covid|mecfs|dyslexia|dysgraphia|dyscalculia|mobility|neisvoid|#neisvoid|ibd|ibs|ulcerative collitis|epilepsy|ptsd|cptsd|ocd|attention deficit|chronic fatigue|cfs|me-cfs|distrophy|wheelchair|mobility scooter|#disability|#disabilityfeed)\\b"
-
-    force_expr = "\\b(#disability|#disabilityfeed|#neisvoid|#neis|#ndis)\\b"
-
-    include_replies = true
-
-    database = "disability.db"
-
-	publish "disability.neurodifferent.me" {
-        service_did = "did:web:disability.neurodifferent.me"
-        service_icon = "disability.png"
-        service_short_name = "disability"
-        service_human_name = "Bluesky Disability"
-        service_description = "A feed showing posts with disability and accessibility related terms."
-	}
-
-	exclusion_filters = [
-	    "antivax",
-	    "negative-terms",
 	]
 }
 
@@ -90,22 +63,4 @@ analyzer "antivax" {
         "cdc has been lying" =                 0.3,
         "medical community claims" =           0.2,
     }
-}
-
-analyzer "negative-terms" {
-	triggers = [
-		"retard",
-		"nigger",
-		"faggot",	
-	]
-
-  any_trigger = true
-
-	threshold = 0.01
-
-	patterns = {
-		"retard" = 10,
-		"nigger" = 10,
-		"faggot" = 10,			
-	}	
 }

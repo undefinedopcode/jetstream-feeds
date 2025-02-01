@@ -13,12 +13,15 @@ import (
 
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"time"
 )
+
+var fPublishFeedName = flag.String("publish", "", "Feed name to publish")
 
 func loadAuthFromEnv(req bool) (*xrpc.AuthInfo, error) {
 	val := os.Getenv("ATP_AUTH_FILE")
@@ -84,12 +87,12 @@ func uploadBlob(ctx context.Context, xrpcc *xrpc.Client, imagefile string) (*lex
 	return ref.Blob, nil
 }
 
-func publishFeedGen( ctx context.Context, host string, handle string, password string, cfg *FeedConfig ) error {
+func publishFeedGen(ctx context.Context, host string, handle string, password string, cfg *Feed) error {
 	desc := cfg.PublishConfig.ServiceDescription
-	did  := cfg.PublishConfig.ServiceDID
+	did := cfg.PublishConfig.ServiceDID
 	rkey := cfg.PublishConfig.ServiceShortName
 	name := rkey
-	img  := cfg.PublishConfig.ServiceIcon
+	img := cfg.PublishConfig.ServiceIcon
 	if cfg.PublishConfig.ServiceHumanName != "" {
 		name = cfg.PublishConfig.ServiceHumanName
 	}
@@ -98,13 +101,20 @@ func publishFeedGen( ctx context.Context, host string, handle string, password s
 	if err != nil {
 		return err
 	}
-	_, err = atproto.ServerCreateSession(ctx, xrpcc, &atproto.ServerCreateSession_Input{
+	res, err := atproto.ServerCreateSession(ctx, xrpcc, &atproto.ServerCreateSession_Input{
 		Identifier: handle,
 		Password:   password,
 	})
 	if err != nil {
 		return err
 	}
+
+	var auth = &xrpc.AuthInfo{}
+	b, _ := json.Marshal(&res)
+	json.Unmarshal(b, auth)
+	xrpcc.Auth = auth
+
+	log.Printf("Res: %#v", res)
 
 	rec := &lexutil.LexiconTypeDecoder{Val: &bsky.FeedGenerator{
 		CreatedAt:   time.Now().Format(util.ISO8601),
@@ -120,7 +130,7 @@ func publishFeedGen( ctx context.Context, host string, handle string, password s
 		}
 	}
 
-	ex, err := atproto.RepoGetRecord(ctx, xrpcc, "", "app.bsky.feed.generator", xrpcc.Auth.Did, rkey)
+	ex, err := atproto.RepoGetRecord(ctx, xrpcc, "", "app.bsky.feed.generator", res.Did, rkey)
 	if err == nil {
 		resp, err := atproto.RepoPutRecord(ctx, xrpcc, &atproto.RepoPutRecord_Input{
 			SwapRecord: ex.Cid,
@@ -137,7 +147,7 @@ func publishFeedGen( ctx context.Context, host string, handle string, password s
 	} else {
 		resp, err := atproto.RepoCreateRecord(ctx, xrpcc, &atproto.RepoCreateRecord_Input{
 			Collection: "app.bsky.feed.generator",
-			Repo:       xrpcc.Auth.Did,
+			Repo:       res.Did,
 			Rkey:       &rkey,
 			Record:     rec,
 		})

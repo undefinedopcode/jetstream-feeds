@@ -32,7 +32,7 @@ func NewTextAnalyzer(triggers []string, patterns map[string]float64, threshold f
 		Patterns:         patterns,
 		Threshold:        threshold,
 		Triggers:         triggers,
-		AnyTriggers: anyTrigger,
+		AnyTriggers:      anyTrigger,
 	}
 }
 
@@ -99,7 +99,7 @@ func (a *TextAnalyzer) AnalyzeText(text string) []SentimentMatch {
 			}
 
 			matches = append(matches, match)
-			index ++
+			index++
 		}
 	}
 
@@ -129,13 +129,8 @@ func (a *TextAnalyzer) Score(text string) (float64, bool) {
 	// Process matches as needed
 	var total float64
 	for _, match := range matches {
-		//log.Println("Pattern:", match.Pattern)
-		//log.Println("Context:", match.Context)
-		//log.Println("Confidence:", match.ConfidenceScore)
-		//log.Println("---")
 		total += match.ConfidenceScore
 	}
-	//log.Println("Total: ", total)
 
 	return total, total >= a.Threshold
 }

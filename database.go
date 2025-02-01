@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"time"
+
+	"github.com/charmbracelet/log"
+
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
-	"log"
 )
 
 type Post struct {
@@ -21,7 +24,9 @@ type SubState struct {
 }
 
 func openDatabase(filename string) (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open(filename), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(filename), &gorm.Config{
+		Logger: &gormCharmLogger{},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +36,7 @@ func openDatabase(filename string) (*gorm.DB, error) {
 
 const writeBufferSize = 1024 * 1024
 
-func postWriter(ctx context.Context, cfg *FeedConfig) (chan *Post, error) {
+func postWriter(ctx context.Context, cfg *Feed) (chan *Post, error) {
 	if cfg.db == nil {
 		db, err := openDatabase(cfg.DB)
 		if err != nil {
@@ -39,15 +44,25 @@ func postWriter(ctx context.Context, cfg *FeedConfig) (chan *Post, error) {
 		}
 		cfg.db = db
 	}
-	log.Printf("Start consumer: %s", cfg.Name)
+	log.Info("Starting database consumer", "feed", cfg.ID)
 	cfg.ch = make(chan *Post, writeBufferSize)
 	go func() {
-		for p := range cfg.ch {
-			if cfg.db != nil {
-				//s := time.Now()
-				// cfg.db.Delete(&Post{URI: p.URI})
-				cfg.db.Create(p)
-				//log.Printf("Written post to database in %s", time.Since(s))
+		for {
+			select {
+			case <-ctx.Done():
+				if cfg.db != nil {
+					if rawdb, err := cfg.db.DB(); err == nil {
+						log.Warn("Stopping database consumer", "feed", cfg.ID)
+						rawdb.Close()
+					}
+				}
+				return
+			case p := <-cfg.ch:
+				if cfg.db != nil {
+					cfg.db.Create(p)
+				}
+			default:
+				time.Sleep(time.Millisecond)
 			}
 		}
 	}()

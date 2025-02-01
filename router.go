@@ -1,13 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
+	"github.com/charmbracelet/log"
+
+	"github.com/labstack/echo/v4"
 )
 
 type PostRec struct {
@@ -15,17 +17,42 @@ type PostRec struct {
 }
 
 type PostList struct {
-	Cursor string `json:"cursor"`
-	Feed []PostRec `json:"feed"`
+	Cursor string    `json:"cursor"`
+	Feed   []PostRec `json:"feed"`
 }
 
-func startFeedService(cfg *FeedConfig) {
-	r := gin.Default()
-	r.GET("/xrpc/app.bsky.feed.getFeedSkeleton", func(c *gin.Context) {
-		feed := c.Query("feed")
-		limit := c.Query("limit")
-		cursor := c.Query("cursor")
-		log.Printf("Params: feed=%s, limit=%s, cursor=%s", feed, limit, cursor)
+func getDIDDoc(cfg *Feed) []byte {
+	txt := fmt.Sprintf(`{
+    "@context": [
+        "https://www.w3.org/ns/did/v1"
+    ],
+    "id": "%s",
+    "service": [
+        {
+            "id": "#bsky_fg",
+            "type": "BskyFeedGenerator",
+            "serviceEndpoint": "https://%s"
+        }
+    ]
+}`, cfg.PublishConfig.ServiceDID, cfg.PublishConfig.ServiceHost)
+	return []byte(txt)
+}
+
+func startFeedService(ctx context.Context, cfg *Feed) {
+	r := echo.New()
+	r.GET("/.well-known/atproto-did", func(c echo.Context) error {
+		c.JSONBlob(http.StatusOK, getDIDDoc(cfg))
+		return nil
+	})
+	r.GET("/.well-known/did.json", func(c echo.Context) error {
+		c.JSONBlob(http.StatusOK, getDIDDoc(cfg))
+		return nil
+	})
+	r.GET("/xrpc/app.bsky.feed.getFeedSkeleton", func(c echo.Context) error {
+		feed := c.QueryParam("feed")
+		limit := c.QueryParam("limit")
+		cursor := c.QueryParam("cursor")
+		log.Info("getFeedSkeleton Params", "feed", feed, "limit", limit, "cursor", cursor)
 		if cfg.db == nil {
 			if db, err := openDatabase(cfg.DB); err == nil {
 				cfg.db = db
@@ -39,21 +66,21 @@ func startFeedService(cfg *FeedConfig) {
 			cid := ""
 			iLimit, err := strconv.ParseInt(limit, 10, 32)
 			if err != nil {
-				c.AbortWithError(400, fmt.Errorf("Bad request: malformed limit param"))
-				return
+				c.String(400, fmt.Sprintf("Bad request: malformed limit param"))
+				return nil
 			}
 			if cursor != "" && strings.Contains(cursor, "::") {
 				parts := strings.SplitN(cursor, "::", 2)
 				ts = parts[0]
 				cid = parts[1]
 				if ts == "" || cid == "" {
-					c.AbortWithError(401, fmt.Errorf("Bad request: malformed cursor"))
-					return
+					c.String(401, fmt.Sprintf("Bad request: malformed cursor"))
+					return nil
 				}
 				_, err = strconv.ParseInt(ts, 10, 64)
 				if err != nil {
-					c.AbortWithError(402, fmt.Errorf("Bad request: malformed cursor"))
-					return
+					c.String(402, fmt.Sprintf("Bad request: malformed cursor"))
+					return nil
 				}
 			}
 			var posts = []*Post{}
@@ -66,9 +93,8 @@ func startFeedService(cfg *FeedConfig) {
 			if len(posts) > 0 {
 				last := posts[len(posts)-1]
 				list := &PostList{
-					Cursor: last.IndexedAt+"::"+last.CID,
-					Feed: []PostRec{
-					},
+					Cursor: last.IndexedAt + "::" + last.CID,
+					Feed:   []PostRec{},
 				}
 				if cid == "" && cfg.PinnedURI != "" {
 					list.Feed = append(list.Feed, PostRec{cfg.PinnedURI})
@@ -77,11 +103,28 @@ func startFeedService(cfg *FeedConfig) {
 					list.Feed = append(list.Feed, PostRec{p.URI})
 				}
 				c.JSON(http.StatusOK, list)
-				return
+				return nil
 			}
 		}
-		c.AbortWithError(404, fmt.Errorf("Posts not found"))
+		c.String(404, fmt.Sprintf("Posts not found"))
+		return nil
 
 	})
-	go r.Run(fmt.Sprintf(":%d", cfg.Port))
+
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", cfg.Port),
+		Handler: r,
+	}
+
+	go func() {
+		log.Info("Starting server...", "feed", cfg.ID, "port", cfg.Port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Error("http server:", "feed", cfg.ID, "error", err)
+		}
+	}()
+
+	go func() {
+		<-ctx.Done()
+		srv.Shutdown(ctx)
+	}()
 }
