@@ -14,17 +14,19 @@ import (
 )
 
 type Feed struct {
-	ID               string `hcl:"id,label"`
-	Name             string `hcl:"name"`
-	PinnedURI        string `hcl:"pinned_uri,optional"`
-	Host             string `hcl:"host,optional"`
-	Port             int    `hcl:"port"`
-	MatchExpr        string `hcl:"match_expr"`
-	ForceExpr        string `hcl:"force_expr,optional"`
-	IncludeReplies   bool   `hcl:"include_replies,optional"`
-	DB               string `hcl:"database"`
+	ID               string          `hcl:"id,label"`
+	Name             string          `hcl:"name"`
+	PinnedURI        string          `hcl:"pinned_uri,optional"`
+	Host             string          `hcl:"host,optional"`
+	Port             int             `hcl:"port"`
+	MatchExpr        string          `hcl:"match_expr,optional"`
+	MatchAnalyzer    *AnalyzerConfig `hcl:"match_analyzer,block"`
+	ForceExpr        string          `hcl:"force_expr,optional"`
+	IncludeReplies   bool            `hcl:"include_replies,optional"`
+	DB               string          `hcl:"database"`
 	matcher          *regexp.Regexp
 	forcer           *regexp.Regexp
+	smatcher         *TextAnalyzer
 	db               *gorm.DB
 	ch               chan *Post
 	PublishConfig    *PublishConfig `hcl:"publish,block"`
@@ -77,6 +79,14 @@ func (feed *Feed) Matches(postText string, isReply bool) bool {
 			return !feed.ShouldFilter(postText)
 		}
 		return false
+	}
+	if feed.MatchAnalyzer != nil {
+		if feed.smatcher == nil {
+			feed.smatcher = NewTextAnalyzer([]string{}, feed.MatchAnalyzer.Patterns, feed.MatchAnalyzer.Threshold, true)
+		}
+		if _, matches := feed.smatcher.Score(postText); !matches {
+			return false
+		}
 	}
 
 	return true
