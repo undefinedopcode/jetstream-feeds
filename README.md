@@ -48,11 +48,11 @@ feed "ducks" {
 	database = "ducks.db"
 
 	publish "ducks.example.com" {
-        service_did = "did:web:ducks.example.com"
-        service_icon = "ducks.png"
-        service_short_name = "ducks"
-        service_human_name = "Bluesky Duck fanciers"
-        service_description = "A feed showing posts with duck related terms."
+            service_did = "did:web:ducks.example.com"
+            service_icon = "ducks.png"
+            service_short_name = "ducks"
+            service_human_name = "Bluesky Duck fanciers"
+            service_description = "A feed showing posts with duck related terms."
 	}
 
 	exclusion_filters = [
@@ -110,6 +110,20 @@ analyzer "antivax" {
 }
 ```
 
+### Serving feeds
+
+Serving feeds is easy, just run the program. 
+
+```sh
+./jetstream-feeds 
+```
+
+I'd recommend setting up some kind of service wrapping (systemd etc) to manage the service.
+
+#### Updating the config
+
+The process will reload and reprocess the configs when it receives a `kill -SIGHUP <pid>`.
+
 ### Publishing a feed
 
 You can publish a feed via the -publish command line option. 
@@ -149,11 +163,11 @@ feed "ducks" {
 	database = "ducks.db"
 
 	publish "ducks.example.com" {
-        service_did = "did:web:ducks.example.com"
-        service_icon = "ducks.png"
-        service_short_name = "ducks"
-        service_human_name = "Bluesky Duck fanciers"
-        service_description = "A feed showing posts with duck related terms."
+            service_did = "did:web:ducks.example.com"
+            service_icon = "ducks.png"
+            service_short_name = "ducks"
+            service_human_name = "Bluesky Duck fanciers"
+            service_description = "A feed showing posts with duck related terms."
 	}
 
 	exclusion_filters = [
