@@ -45,19 +45,19 @@ feed "ducks" {
 
     include_replies = true
 
-	database = "ducks.db"
+    database = "ducks.db"
 
-	publish "ducks.example.com" {
-            service_did = "did:web:ducks.example.com"
-            service_icon = "ducks.png"
-            service_short_name = "ducks"
-            service_human_name = "Bluesky Duck fanciers"
-            service_description = "A feed showing posts with duck related terms."
-	}
+    publish "ducks.example.com" {
+        service_did = "did:web:ducks.example.com"
+        service_icon = "ducks.png"
+        service_short_name = "ducks"
+        service_human_name = "Bluesky Duck fanciers"
+        service_description = "A feed showing posts with duck related terms."
+    }
 
-	exclusion_filters = [
-	    "antivax",
-	]
+    exclusion_filters = [
+        "antivax",
+    ]
 }
 ```
 
@@ -160,19 +160,19 @@ feed "ducks" {
 
     include_replies = true
 
-	database = "ducks.db"
+    database = "ducks.db"
 
-	publish "ducks.example.com" {
-            service_did = "did:web:ducks.example.com"
-            service_icon = "ducks.png"
-            service_short_name = "ducks"
-            service_human_name = "Bluesky Duck fanciers"
-            service_description = "A feed showing posts with duck related terms."
-	}
+    publish "ducks.example.com" {
+        service_did = "did:web:ducks.example.com"
+        service_icon = "ducks.png"
+        service_short_name = "ducks"
+        service_human_name = "Bluesky Duck fanciers"
+        service_description = "A feed showing posts with duck related terms."
+    }
 
-	exclusion_filters = [
-	    "antivax",
-	]
+    exclusion_filters = [
+        "antivax",
+    ]
 }
 
 analyzer "antivax" {
